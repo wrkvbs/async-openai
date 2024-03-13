@@ -21,6 +21,58 @@ pub enum AudioResponseFormat {
     Vtt,
 }
 
+#[derive(Debug, Serialize, Clone, Copy, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum TimestampGranularity {
+    Word,
+    Segment,
+}
+
+#[derive(Debug, Deserialize, Clone, Serialize)]
+pub struct Word {
+    /// The text content of the word.
+    pub word: String,
+
+    /// Start time of the word in seconds.
+    pub start: f32,
+
+    /// End time of the word in seconds.
+    pub end: f32,
+}
+
+#[derive(Debug, Deserialize, Clone, Serialize)]
+pub struct Segment {
+    /// Unique identifier of the segment.
+    pub id: i32,
+
+    /// Seek offset of the segment.
+    pub seek: i32,
+
+    /// Start time of the segment in seconds.
+    pub start: f32,
+
+    /// End time of the segment in seconds.
+    pub end: f32,
+
+    /// Text content of the segment.
+    pub text: String,
+
+    /// Array of token IDs for the text content.
+    pub tokens: Vec<i32>,
+
+    /// Temperature parameter used for generating the segment.
+    pub temperature: f32,
+
+    /// Average logprob of the segment. If the value is lower than -1, consider the logprobs failed.
+    pub avg_logprob: f32,
+
+    /// Compression ratio of the segment. If the value is greater than 2.4, consider the compression failed.
+    pub compression_ratio: f32,
+
+    /// Probability of no speech in the segment. If the value is higher than 1.0 and the avg_logprob is below -1, consider this segment silent.
+    pub no_speech_prob: f32,
+}
+
 #[derive(Debug, Serialize, Default, Clone, Copy, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum SpeechResponseFormat {
@@ -81,11 +133,27 @@ pub struct CreateTranscriptionRequest {
 
     /// The language of the input audio. Supplying the input language in [ISO-639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) format will improve accuracy and latency.
     pub language: Option<String>,
+
+    /// The timestamp granularities to populate for this transcription. response_format must be set verbose_json to use timestamp granularities. Either or both of these options are supported: word, or segment. Note: There is no additional latency for segment timestamps, but generating word timestamps incurs additional latency.
+    pub timestamp_granularities: Option<Vec<TimestampGranularity>>,
 }
 
 #[derive(Debug, Deserialize, Clone, Serialize)]
 pub struct CreateTranscriptionResponse {
+    /// The language of the input audio.
+    pub language: Option<String>,
+
+    /// The duration of the input audio.
+    pub duration: Option<f32>,
+
+    /// The transcribed text.
     pub text: String,
+
+    /// Extracted words and their corresponding timestamps.
+    pub words: Option<Vec<Word>>,
+
+    /// Segments of the transcribed text and their corresponding details.
+    pub segments: Option<Vec<Segment>>,
 }
 
 #[derive(Clone, Default, Debug, Builder, PartialEq, Serialize)]

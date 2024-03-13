@@ -1,4 +1,7 @@
-use async_openai::{types::CreateTranscriptionRequestArgs, Client};
+use async_openai::{
+    types::{AudioResponseFormat, CreateTranscriptionRequestArgs, TimestampGranularity},
+    Client,
+};
 use std::error::Error;
 
 #[tokio::main]
@@ -15,6 +18,24 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let response = client.audio().transcribe(request).await?;
 
     println!("{}", response.text);
+
+    // Verbose JSON with segments and words
+    let request = CreateTranscriptionRequestArgs::default()
+        .file(
+            "./audio/A Message From Sir David Attenborough A Perfect Planet BBC Earth_320kbps.mp3",
+        )
+        .model("whisper-1")
+        .response_format(AudioResponseFormat::VerboseJson)
+        .timestamp_granularities(vec![
+            TimestampGranularity::Segment,
+            TimestampGranularity::Word,
+        ])
+        .build()?;
+
+    let response = client.audio().transcribe(request).await?;
+
+    println!("{:?}", response.segments.unwrap_or_default());
+    println!("{:?}", response.words.unwrap_or_default());
 
     Ok(())
 }
